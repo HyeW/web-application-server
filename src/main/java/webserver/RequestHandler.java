@@ -45,18 +45,20 @@ public class RequestHandler extends Thread {
 
             DataOutputStream dos = new DataOutputStream(out);
             String url = httpInfos[1];
+            byte[] body;
             if(url.startsWith("/user/create")){
                 log.debug("contentlen : {}", contentLen);
                 Map<String, String> params = HttpRequestUtils.parseQueryString(IOUtils.readData(br, contentLen));
                 User user = new User(params.get("userId"), params.get("password"), params.get("name"), params.get("email"));
                 log.debug("User: {}", user);
+                body = Files.readAllBytes(new File("./webapp/index.html").toPath());
+                response302Header(dos, body.length);
             }
             else {
-                byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
+                body = Files.readAllBytes(new File("./webapp" + url).toPath());
                 response200Header(dos, body.length);
-                responseBody(dos, body);
             }
-
+            responseBody(dos, body);
         } catch (IOException e) {
             log.error(e.getMessage());
         }
@@ -65,6 +67,17 @@ public class RequestHandler extends Thread {
     private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
         try {
             dos.writeBytes("HTTP/1.1 200 OK \r\n");
+            dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+            dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
+            dos.writeBytes("\r\n");
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void response302Header(DataOutputStream dos, int lengthOfBodyContent) {
+        try {
+            dos.writeBytes("HTTP/1.1 302 Temporarily Moved \r\n");
             dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
             dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
             dos.writeBytes("\r\n");
