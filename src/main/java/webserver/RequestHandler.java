@@ -22,21 +22,22 @@ public class RequestHandler extends Thread {
                 connection.getPort());
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
-            BufferedReader br = new BufferedReader(new InputStreamReader(in));
+            BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
             String line = br.readLine();
+            log.debug("request lne : {}",line);
             if(line == null){
                 return;
             }
-            String[] httpInfos = line.split(" ");
-            byte[] body;
-            if(httpInfos[1].equals("/index.html")){
-                 body = Files.readAllBytes(new File("./webapp"+httpInfos[1]).toPath());
-            }else{
-                body = "Hello World".getBytes();
+
+            while(!line.equals(" ")){
+                line = br.readLine();
+                log.debug("header : {}", line);
             }
 
-            // TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
+            String[] httpInfos = line.split(" ");
+
             DataOutputStream dos = new DataOutputStream(out);
+            byte[] body = Files.readAllBytes(new File("./webapp"+httpInfos[1]).toPath());
             response200Header(dos, body.length);
             responseBody(dos, body);
         } catch (IOException e) {
