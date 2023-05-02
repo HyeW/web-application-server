@@ -29,23 +29,25 @@ public class RequestHandler extends Thread {
             String line = br.readLine();
             log.debug("request lne : {}",line);
             if(line == null){
-                log.debug("null입니다");
                 return;
             }
 
             String[] httpInfos = line.split(" ");
-
+            int contentLen = 0;
             while(!line.equals("")){
                 line = br.readLine();
+                String[] token = line.split(" ");
+                if(token[0].equals("Content-Length:")){
+                    contentLen = Integer.parseInt(token[1]);
+                }
                 log.debug("header : {}", line);
             }
 
             DataOutputStream dos = new DataOutputStream(out);
             String url = httpInfos[1];
             if(url.startsWith("/user/create")){
-                int index = url.indexOf("?");
-                String queryString = url.substring(index+1);
-                Map<String, String> params = HttpRequestUtils.parseQueryString(queryString);
+                log.debug("contentlen : {}", contentLen);
+                Map<String, String> params = HttpRequestUtils.parseQueryString(IOUtils.readData(br, contentLen));
                 User user = new User(params.get("userId"), params.get("password"), params.get("name"), params.get("email"));
                 log.debug("User: {}", user);
             }
@@ -54,7 +56,6 @@ public class RequestHandler extends Thread {
                 response200Header(dos, body.length);
                 responseBody(dos, body);
             }
-
 
         } catch (IOException e) {
             log.error(e.getMessage());
