@@ -3,9 +3,12 @@ package webserver;
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.Map;
 
+import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.HttpRequestUtils;
 import util.IOUtils;
 
 public class RequestHandler extends Thread {
@@ -26,20 +29,33 @@ public class RequestHandler extends Thread {
             String line = br.readLine();
             log.debug("request lne : {}",line);
             if(line == null){
+                log.debug("null입니다");
                 return;
-            }
-
-            while(!line.equals(" ")){
-                line = br.readLine();
-                log.debug("header : {}", line);
             }
 
             String[] httpInfos = line.split(" ");
 
+            while(!line.equals("")){
+                line = br.readLine();
+                log.debug("header : {}", line);
+            }
+
             DataOutputStream dos = new DataOutputStream(out);
-            byte[] body = Files.readAllBytes(new File("./webapp"+httpInfos[1]).toPath());
-            response200Header(dos, body.length);
-            responseBody(dos, body);
+            String url = httpInfos[1];
+            if(url.startsWith("/user/create")){
+                int index = url.indexOf("?");
+                String queryString = url.substring(index+1);
+                Map<String, String> params = HttpRequestUtils.parseQueryString(queryString);
+                User user = new User(params.get("userId"), params.get("password"), params.get("name"), params.get("email"));
+                log.debug("User: {}", user);
+            }
+            else {
+                byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
+                response200Header(dos, body.length);
+                responseBody(dos, body);
+            }
+
+
         } catch (IOException e) {
             log.error(e.getMessage());
         }
